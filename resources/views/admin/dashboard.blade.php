@@ -1,3 +1,22 @@
+@extends('admin.layouts.layout')
+
+@section('content')
+<div class="dashboard-outer">
+<div class="upper-title-box">
+<h3>Dashboard</h3>
+<div class="text">Welcome back</div>
+</div>
+<div class="row">
+<div class="col-lg-12">
+<div class="ls-widget">
+<div class="widget-title"><h4>Getting Started</h4></div>
+<div class="widget-content"><p>Replace this with your dashboard content.</p></div>
+</div>
+</div>
+</div>
+</div>
+@endsection
+
 {{-- Superio admin dashboard (dashboard.html) --}}
 <!DOCTYPE html>
 <html lang="en">

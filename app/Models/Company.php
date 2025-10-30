@@ -36,7 +36,18 @@ class Company extends Model
      */
     public function getLogoUrlAttribute()
     {
-        return $this->logo ? asset('storage/' . $this->logo) : asset('assets/images/resource/company-6.png');
+        if (!$this->logo) {
+            return asset('assets/images/resource/company-6.png');
+        }
+        if (filter_var($this->logo, FILTER_VALIDATE_URL)) {
+            return $this->logo;
+        }
+        // If saved under public directory (e.g., uploads/...)
+        if (file_exists(public_path($this->logo))) {
+            return asset($this->logo);
+        }
+        // Fallback to storage symlink pattern
+        return asset('storage/' . $this->logo);
     }
 
     /**

@@ -58,12 +58,39 @@ class AdminController extends Controller
 
         // Basic analytics
         $postedJobs = Job::where('user_id', Auth::id())->count();
-        // Placeholders until applications/messages features exist
-        $applicationsCount = 0;
+        $jobIds = Job::where('user_id', Auth::id())->pluck('id');
+        $applicationsCount = \App\Models\JobApplication::whereIn('job_id', $jobIds)->count();
+        $shortlistCount = \App\Models\JobApplication::whereIn('job_id', $jobIds)->where('status', 'shortlisted')->count();
+        // Placeholder until messages feature exists
         $messagesCount = 0;
-        $shortlistCount = 0;
+        
+        // Recent applications (latest 6)
+        $recentApplications = \App\Models\JobApplication::with(['user','job'])
+            ->whereIn('job_id', $jobIds)
+            ->latest()
+            ->take(6)
+            ->get()
+            ->map(function ($application) {
+                $user = $application->user;
+                $job = $application->job;
+                $skills = [];
+                if (!empty($user?->languages)) {
+                    $skills = array_filter(array_map('trim', explode(',', (string) $user->languages)));
+                }
+                return (object) [
+                    'name' => $user?->name ?? 'Candidate',
+                    'avatar_url' => $user?->logo_url ?? asset('assets/images/resource/candidate-1.png'),
+                    'position' => $user?->job_title ?? 'Applicant',
+                    'location' => $user?->city ?? null,
+                    'expected_salary' => $user?->expected_salary ?? null,
+                    'skills' => $skills,
+                    'applied_at' => $application->created_at?->diffForHumans(),
+                    'job_title' => $job?->title ?? 'Job',
+                    'status' => $application->status,
+                ];
+            });
 
-        return view('admin.dashboard', compact('postedJobs', 'applicationsCount', 'messagesCount', 'shortlistCount'));
+        return view('admin.layouts.layout', compact('postedJobs', 'applicationsCount', 'messagesCount', 'shortlistCount', 'recentApplications'));
     }
 
     /**
@@ -82,7 +109,7 @@ class AdminController extends Controller
         // Get the company data (assuming only one company for now)
         $company = Company::first();
 
-        return view('admin.company-profile', compact('company'));
+        return view('admin.layouts.company-profile', compact('company'));
     }
 
     /**
@@ -119,11 +146,10 @@ class AdminController extends Controller
         ]);
 
         try {
-            // Get the company (assuming only one company for now)
+            // Get or create the company (assuming a single company record for now)
             $company = Company::first();
-            
             if (!$company) {
-                return redirect()->back()->with('error', 'Company profile not found.');
+                $company = Company::create([]);
             }
 
             // Prepare update data - only include fields that are provided
@@ -144,10 +170,17 @@ class AdminController extends Controller
             if ($request->has('city')) $updateData['city'] = $request->city;
             if ($request->has('address')) $updateData['address'] = $request->address;
 
-            // If a company logo was uploaded, store and include in update
+            // If a company logo was uploaded, move it into public/uploads/logos and store relative path
             if ($request->hasFile('logo')) {
-                $path = $request->file('logo')->store('logos', 'public');
-                $updateData['logo'] = $path;
+                $file = $request->file('logo');
+                $destination = public_path('uploads/logos');
+                if (!is_dir($destination)) {
+                    @mkdir($destination, 0755, true);
+                }
+                $extension = $file->getClientOriginalExtension() ?: 'png';
+                $filename = uniqid('logo_') . '.' . strtolower($extension);
+                $file->move($destination, $filename);
+                $updateData['logo'] = 'uploads/logos/' . $filename;
             }
 
             // Check if there's any data to update
@@ -224,7 +257,7 @@ class AdminController extends Controller
      */
     public function changePassword()
     {
-        return view('admin.change-password');
+        return view('admin.layouts.change-password');
     }
 
     /**
@@ -257,7 +290,7 @@ class AdminController extends Controller
      */
     public function changeDetails()
     {
-        return view('admin.change-details');
+        return view('admin.layouts.change-details');
     }
 
     /**
@@ -278,8 +311,15 @@ class AdminController extends Controller
         ];
 
         if ($request->hasFile('logo')) {
-            $path = $request->file('logo')->store('logos', 'public');
-            $update['logo'] = $path;
+            $file = $request->file('logo');
+            $destination = public_path('uploads/logos');
+            if (!is_dir($destination)) {
+                @mkdir($destination, 0755, true);
+            }
+            $extension = $file->getClientOriginalExtension() ?: 'png';
+            $filename = uniqid('logo_') . '.' . strtolower($extension);
+            $file->move($destination, $filename);
+            $update['logo'] = 'uploads/logos/' . $filename;
         }
 
         $user->update($update);
@@ -292,7 +332,7 @@ class AdminController extends Controller
      */
     public function postJob()
     {
-        return view('admin.post-job');
+        return view('admin.layouts.post-a-new-job');
     }
 
     /**
@@ -393,7 +433,7 @@ class AdminController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(5);
 
-        return view('admin.manage-jobs', compact('jobs'));
+        return view('admin.layouts.manage-jobs', compact('jobs'));
     }
 
     /**
@@ -404,7 +444,7 @@ class AdminController extends Controller
         // Access is already checked by middleware in constructor
         $job = Job::where('user_id', Auth::id())->findOrFail($id);
         
-        return view('admin.view-job', compact('job'));
+        return view('admin.layouts.view-job', compact('job'));
     }
 
     /**
@@ -446,7 +486,7 @@ class AdminController extends Controller
             ];
         });
 
-        return view('admin.job-applicants', compact('job', 'applicants'));
+        return view('admin.layouts.job-applicants', compact('job', 'applicants'));
     }
 
     /**
@@ -484,7 +524,52 @@ class AdminController extends Controller
         // replace paginator collection with mapped data for the view
         $applications->setCollection($applicants);
 
-        return view('admin.all-applicants', [
+        return view('admin.layouts.all-applicants', [
+            'applications' => $applications
+        ]);
+    }
+
+    /**
+     * List shortlisted applicants across admin's jobs
+     */
+    public function shortlistedCandidates()
+    {
+        // Get all job IDs for this admin
+        $jobIds = Job::where('user_id', Auth::id())->pluck('id');
+
+        $applications = \App\Models\JobApplication::with(['user', 'job'])
+            ->whereIn('job_id', $jobIds)
+            ->where('status', 'shortlisted')
+            ->latest()
+            ->paginate(10);
+
+        $mapped = $applications->getCollection()->map(function ($application) {
+            $user = $application->user;
+            $job = $application->job;
+            $skills = [];
+            if (!empty($user?->languages)) {
+                $skills = array_filter(array_map('trim', explode(',', (string) $user->languages)));
+            }
+            return (object) [
+                'name' => $user?->name ?? 'Candidate',
+                'avatar_url' => $user?->logo_url ?? asset('assets/images/resource/candidate-1.png'),
+                'position' => $user?->job_title ?? 'Applicant',
+                'location' => $user?->city ?? null,
+                'email' => $user?->email,
+                'phone' => $user?->phone,
+                'applied_at' => $application->created_at?->diffForHumans(),
+                'status' => $application->status,
+                'cv_url' => $application->resume_path ? asset('storage/' . $application->resume_path) : null,
+                'job_title' => $job?->title ?? 'Job',
+                'job_id' => $job?->id,
+                'application_id' => $application->id,
+                'skills' => $skills,
+            ];
+        });
+
+        $applications->setCollection($mapped);
+
+        return view('admin.layouts.shortlisted-candidates', [
             'applications' => $applications
         ]);
     }
@@ -514,7 +599,7 @@ class AdminController extends Controller
         // Access is already checked by middleware in constructor
         $job = Job::where('user_id', Auth::id())->findOrFail($id);
         
-        return view('admin.edit-job', compact('job'));
+        return view('admin.layouts.edit-job', compact('job'));
     }
 
     /**
@@ -610,7 +695,7 @@ class AdminController extends Controller
     public function manageCategories()
     {
         $categories = Category::ordered()->paginate(5);
-        return view('admin.manage-categories', compact('categories'));
+        return view('admin.layouts.manage-categories', compact('categories'));
     }
 
     /**
@@ -618,7 +703,7 @@ class AdminController extends Controller
      */
     public function createCategory()
     {
-        return view('admin.create-category');
+        return view('admin.layouts.create-category');
     }
 
 
@@ -655,7 +740,7 @@ class AdminController extends Controller
     public function editCategory($id)
     {
         $category = Category::findOrFail($id);
-        return view('admin.edit-category', compact('category'));
+        return view('admin.layouts.edit-category', compact('category'));
     }
 
     /**

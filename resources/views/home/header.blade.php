@@ -5,12 +5,7 @@
           <!--Nav Outer -->
           <div class="nav-outer">
             <div class="logo-box">
-              @php
-                $company = \App\Models\Company::first();
-                $siteOwner = \App\Models\User::where('role','admin')->first();
-                $logoUrl = ($siteOwner && $siteOwner->logo) ? $siteOwner->logo_url : (($company && isset($company->logo_url)) ? $company->logo_url : asset('assets/images/logo.svg'));
-              @endphp
-              <div class="logo"><a href="{{ route('home') }}"><img src="{{ $logoUrl }}" alt="" title=""></a></div>
+              <div class="logo"><a href="{{ route('home') }}"><img src="{{ \App\Models\Company::first()?->logo ? asset(\App\Models\Company::first()->logo) : asset('assets/images/logo.svg') }}" alt="" title=""></a></div>
             </div>
 
             <nav class="nav main-menu">
@@ -76,7 +71,7 @@
 
       <!-- Mobile Header -->
       <div class="mobile-header">
-        <div class="logo"><a href="{{ route('home') }}"><img src="{{ asset('assets/images/logo.svg') }}" alt="" title=""></a></div>
+        <div class="logo"><a href="{{ route('home') }}"><img src="{{ \App\Models\Company::first()?->logo ? asset(\App\Models\Company::first()->logo) : asset('assets/images/logo.svg') }}" alt="" title=""></a></div>
 
         <!--Nav Box-->
         <div class="nav-outer clearfix">

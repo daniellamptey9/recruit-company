@@ -4,13 +4,11 @@
         <div class="widgets-section">
           @php
             $company = \App\Models\Company::first();
-            $siteOwner = \App\Models\User::where('role','admin')->first();
-            $logoUrl = ($siteOwner && $siteOwner->logo) ? $siteOwner->logo_url : (($company && isset($company->logo_url)) ? $company->logo_url : asset('assets/images/logo-2.svg'));
           @endphp
           <div class="row">
             <div class="big-column col-xl-4 col-lg-3 col-md-12">
               <div class="footer-column about-widget">
-                <div class="logo"><a href="{{ route('home') }}"><img src="{{ $logoUrl }}" alt=""></a></div>
+                <div class="logo"><a href="{{ route('home') }}"><img src="{{ $company?->logo ? asset($company->logo) : asset('assets/images/logo-2.svg') }}" alt=""></a></div>
                 <p class="phone-num"><span>Call us </span><a href="thebeehost@support.com">{{ $company->phone ?? config('app.phone', '123 456 7890') }}</a></p>
                 <p class="address">{{ $company->address ?? config('app.address', '329 Queensberry Street') }}</p>
                 <p class="address">{{ $company->country ?? config('app.country', 'United Kingdom') }}</p>

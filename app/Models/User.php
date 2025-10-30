@@ -98,6 +98,15 @@ class User extends Authenticatable
 
     public function getLogoUrlAttribute(): string
     {
-        return $this->logo ? asset('storage/' . $this->logo) : asset('assets/images/logo-2.svg');
+        if (!$this->logo) {
+            return asset('assets/images/logo-2.svg');
+        }
+        if (filter_var($this->logo, FILTER_VALIDATE_URL)) {
+            return $this->logo;
+        }
+        if (file_exists(public_path($this->logo))) {
+            return asset($this->logo);
+        }
+        return asset('storage/' . $this->logo);
     }
 }

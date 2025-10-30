@@ -106,6 +106,7 @@ Route::post('/admin/post-job', [AdminController::class, 'storeJob'])->name('admi
     // Job management routes
     Route::get('/admin/manage-jobs', [AdminController::class, 'manageJobs'])->name('admin.manage-jobs');
     Route::get('/admin/applicants', [AdminController::class, 'allApplicants'])->name('admin.all-applicants');
+    Route::get('/admin/shortlisted', [AdminController::class, 'shortlistedCandidates'])->name('admin.shortlisted-candidates');
     Route::get('/admin/debug-jobs', function() {
         $jobs = \App\Models\Job::all();
         return view('admin.debug-jobs', compact('jobs'));
