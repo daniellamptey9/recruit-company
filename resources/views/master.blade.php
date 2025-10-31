@@ -22,6 +22,14 @@
 
 <body data-anm=".anm">
 
+  @php
+    // Ensure $logoUrl is always defined to prevent undefined variable errors
+    if (!isset($logoUrl)) {
+      $siteCompany = \App\Models\Company::first();
+      $logoUrl = ($siteCompany && $siteCompany->logo_url) ? $siteCompany->logo_url : asset('assets/images/resource/company-7.png');
+    }
+  @endphp
+
   <div class="page-wrapper">
 
     <!-- Preloader -->
