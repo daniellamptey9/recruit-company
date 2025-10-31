@@ -5,6 +5,12 @@ use Illuminate\Http\Request;
 
 define('LARAVEL_START', microtime(true));
 
+// TEMPORARY: Force error display for debugging
+// REMOVE THESE LINES AFTER FIXING THE ERROR!
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 /*
 |--------------------------------------------------------------------------
 | Check If The Application Is Under Maintenance
