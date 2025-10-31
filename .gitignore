@@ -4,7 +4,7 @@
 /public/hot
 /public/storage
 /storage/*.key
-/vendor
+# /vendor - TEMPORARILY REMOVED TO FIX DEPLOYMENT. REVERT AFTER WEBSITE IS FUNCTIONAL
 Homestead.json
 Homestead.yaml
 auth.json
