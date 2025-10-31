@@ -16,3 +16,8 @@ yarn-error.log
 !bootstrap/cache/services.php
 !bootstrap/cache/packages.php
 !bootstrap/cache/.gitignore
+# Allow deployment package to be committed
+!DEPLOY-TO-SERVER/
+!DEPLOY-TO-SERVER/**/*
+!DEPLOY-TO-SERVER/vendor/
+!DEPLOY-TO-SERVER/vendor/**/*
