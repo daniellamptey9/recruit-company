@@ -1,0 +1,51 @@
+🚀 UPLOAD THIS FOLDER TO YOUR SERVER
+=====================================
+
+✅ This folder contains EVERYTHING including the vendor folder!
+
+INSTRUCTIONS:
+-------------
+
+1. ZIP THIS ENTIRE "DEPLOY-TO-SERVER" FOLDER
+   
+2. Upload via FTP or cPanel File Manager:
+   - Destination: /home/jobmates/public_html/
+   - Extract the zip file there
+   - Move all contents from DEPLOY-TO-SERVER folder to public_html root
+
+3. SET PERMISSIONS (via cPanel File Manager):
+   
+   a) bootstrap folder:
+      - Right-click → Change Permissions → 775
+      - Check "Recurse into subdirectories"
+      - Click "Change Permissions"
+   
+   b) storage folder:
+      - Right-click → Change Permissions → 775
+      - Check "Recurse into subdirectories"
+      - Click "Change Permissions"
+   
+   c) Navigate to bootstrap/cache:
+      - services.php → 664
+      - packages.php → 664
+
+4. EDIT .env FILE:
+   - Open .env in File Manager
+   - Set your database credentials:
+     DB_HOST=localhost
+     DB_DATABASE=your_database
+     DB_USERNAME=your_username
+     DB_PASSWORD=your_password
+   - Set APP_DEBUG=false (after testing)
+
+5. TEST:
+   - Visit https://jobmateservices.com
+   - Should work now!
+
+IMPORTANT:
+- The vendor folder is INCLUDED in this package
+- No need to run composer on server
+- Just upload, extract, set permissions, and go!
+
+=====================================
+
